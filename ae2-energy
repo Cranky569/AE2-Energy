@@ -1,5 +1,5 @@
 local mon = peripheral.find("monitor")
-local flux = peripheral.find("flux_network") -- Flux Accessor / Controller
+local flux = peripheral.find("flux_accessor") -- Flux Accessor / Controller
 
 if not mon then error("Kein Monitor gefunden!") end
 if not flux then error("Kein Flux Accessor gefunden!") end
