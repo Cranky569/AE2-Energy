@@ -1,8 +1,8 @@
 local mon = peripheral.find("monitor")
-local flux = peripheral.find('flux_accessor') -- Flux Accessor / Controller
+local flux = peripheral.find('me_bridge')
 
 if not mon then error("Kein Monitor gefunden!") end
-if not flux then error("Kein Flux Accessor gefunden!") end
+if not flux then error("Keine Bridge gefunden!") end
 
 -- Funktion zum Formatieren großer Zahlen mit K, M, G, T
 local function formatBytes(bytes)
