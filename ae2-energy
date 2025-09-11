@@ -1,0 +1,51 @@
+local mon = peripheral.find("monitor")
+local me = peripheral.find("me_bridge")
+
+if not mon then error("Kein Monitor gefunden!") end
+if not me then error("Keine ME-Bridge gefunden!") end
+
+-- Funktion zum Formatieren großer Zahlen mit K, M, G
+local function formatBytes(bytes)
+    if bytes >= 1000000000 then
+        return string.format("%.2fG", bytes / 1000000000)
+    elseif bytes >= 1000000 then
+        return string.format("%.2fM", bytes / 1000000)
+    elseif bytes >= 1000 then
+        return string.format("%.2fK", bytes / 1000)
+    else
+        return tostring(bytes)
+    end
+end
+
+-- Monitor vorbereiten
+mon.clear()
+mon.setTextScale(1)
+mon.setBackgroundColor(colors.black)
+mon.setTextColor(colors.white)
+
+local function writeCentered(text, y, color)
+    local w, _ = mon.getSize()
+    local x = math.floor((w - #text) / 2) + 1
+    mon.setCursorPos(x, y)
+    if color then mon.setTextColor(color) end
+    mon.write(text)
+    mon.setTextColor(colors.white)
+end
+
+while true do
+    mon.clear()
+    local y = 1
+    writeCentered("AE2 Energy Monitor", y, colors.yellow)
+    y = y + 2
+
+    local ok, usage = pcall(me.getEnergyUsage)
+    if ok then
+        writeCentered("Energy Usage: " .. formatBytes(usage) .. " RF/t", y, colors.red)
+        y = y + 1
+    else
+        writeCentered("Energy Usage: Error", y, colors.red)
+        y = y + 1
+    end
+
+    sleep(2)
+end
