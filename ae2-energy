@@ -1,14 +1,10 @@
 local mon = peripheral.find("monitor")
 local bridge = peripheral.find("me_bridge")
 
-if not mon then
-    error("Kein Monitor gefunden!")
-end
-if not bridge then
-    error("Keine ME Bridge gefunden!")
-end
+if not mon then error("Kein Monitor gefunden!") end
+if not bridge then error("Keine ME Bridge gefunden!") end
 
--- Funktion zum Formatieren großer Zahlen mit K, M, G, T
+-- Funktion zum Formatieren großer Zahlen
 local function formatBytes(bytes)
     if bytes >= 1e12 then
         return string.format("%.2fT", bytes / 1e12)
@@ -23,7 +19,7 @@ local function formatBytes(bytes)
     end
 end
 
--- Monitor vorbereiten
+-- Monitor Setup
 mon.clear()
 mon.setTextScale(1)
 mon.setBackgroundColor(colors.black)
@@ -41,10 +37,10 @@ end
 while true do
     mon.clear()
     local y = 1
-    writeCentered("Flux Energy Monitor", y, colors.yellow)
+    writeCentered("ME Energy Monitor", y, colors.yellow)
     y = y + 2
 
-    -- Energieverbrauch (Usage / Output)
+    -- Energieverbrauch
     local okUsage, usage = pcall(bridge.getEnergyUsage)
     if okUsage and type(usage) == "number" then
         writeCentered("Energy Usage: " .. formatBytes(usage) .. " FE/t", y, colors.red)
@@ -54,17 +50,16 @@ while true do
         y = y + 1
     end
 
-    -- Gespeicherte Energie + maximale Kapazität + Prozent
-    local okStored, stored = pcall(bridge.getEnergyStorage)
-    local okCap, capacity = pcall(bridge.getMaxEnergyStorage)
-    if okStored and okCap and type(stored) == "number" and type(capacity) == "number" and capacity > 0 then
-        local percent = (stored / capacity) * 100
-        writeCentered("Stored: " .. formatBytes(stored) .. " / " .. formatBytes(capacity), y, colors.green)
+    -- FE Energy Cell auslesen
+    local okCell, cell = pcall(bridge.getItem, { name = "fe_1m_cell" })
+    if okCell and cell and type(cell.amount) == "number" and type(cell.maxCount) == "number" then
+        local percent = (cell.amount / cell.maxCount) * 100
+        writeCentered("Stored: " .. formatBytes(cell.amount) .. " / " .. formatBytes(cell.maxCount), y, colors.green)
         y = y + 1
         writeCentered(string.format("(%.2f%%)", percent), y, colors.green)
         y = y + 1
     else
-        writeCentered("Energy Stored: Error", y, colors.red)
+        writeCentered("Energy Cell not found!", y, colors.red)
         y = y + 1
     end
 
