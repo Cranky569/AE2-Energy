@@ -1,17 +1,19 @@
 local mon = peripheral.find("monitor")
-local me = peripheral.find("me_bridge")
+local flux = peripheral.find("flux_network") -- Flux Accessor / Controller
 
 if not mon then error("Kein Monitor gefunden!") end
-if not me then error("Keine ME-Bridge gefunden!") end
+if not flux then error("Kein Flux Accessor gefunden!") end
 
--- Funktion zum Formatieren großer Zahlen mit K, M, G
+-- Funktion zum Formatieren großer Zahlen mit K, M, G, T
 local function formatBytes(bytes)
-    if bytes >= 1000000000 then
-        return string.format("%.2fG", bytes / 1000000000)
-    elseif bytes >= 1000000 then
-        return string.format("%.2fM", bytes / 1000000)
-    elseif bytes >= 1000 then
-        return string.format("%.2fK", bytes / 1000)
+    if bytes >= 1e12 then
+        return string.format("%.2fT", bytes / 1e12)
+    elseif bytes >= 1e9 then
+        return string.format("%.2fG", bytes / 1e9)
+    elseif bytes >= 1e6 then
+        return string.format("%.2fM", bytes / 1e6)
+    elseif bytes >= 1e3 then
+        return string.format("%.2fK", bytes / 1e3)
     else
         return tostring(bytes)
     end
@@ -35,30 +37,27 @@ end
 while true do
     mon.clear()
     local y = 1
-    writeCentered("AE2 Energy Monitor", y, colors.yellow)
+    writeCentered("Flux Energy Monitor", y, colors.yellow)
     y = y + 2
 
-    -- Energieverbrauch
-    local okUsage, usage = pcall(me.getEnergyUsage)
-    if okUsage then
-        writeCentered("Energy Usage: " .. formatBytes(usage) .. " RF/t", y, colors.red)
+    -- Energieverbrauch (Output)
+    local okOut, output = pcall(flux.getTransfer) -- Output in FE/t
+    if okOut then
+        writeCentered("Energy Usage: " .. formatBytes(output) .. " FE/t", y, colors.red)
         y = y + 1
     else
         writeCentered("Energy Usage: Error", y, colors.red)
         y = y + 1
     end
 
-    -- Gespeicherte Energie
-    local okStored, stored = pcall(me.getStoredEnergy)
-    local okMax, maxStored = pcall(me.getMaxStoredEnergy) -- nur wenn deine Bridge das kann
-    if okStored then
-        if okMax and maxStored > 0 then
-            local percent = (stored / maxStored) * 100
-            writeCentered("Energy Stored: " .. formatBytes(stored) .. " FE (" .. string.format("%.1f", percent) .. "%)", y, colors.green)
-        else
-            -- Falls keine max-Kapazität verfügbar
-            writeCentered("Energy Stored: " .. formatBytes(stored) .. " FE", y, colors.green)
-        end
+    -- Gespeicherte Energie + % anzeigen
+    local okStored, stored = pcall(flux.getEnergyStored)
+    local okCap, capacity = pcall(flux.getMaxEnergyStored)
+    if okStored and okCap and capacity > 0 then
+        local percent = (stored / capacity) * 100
+        writeCentered("Stored: " .. formatBytes(stored) .. " / " .. formatBytes(capacity), y, colors.green)
+        y = y + 1
+        writeCentered(string.format("(%.2f%%)", percent), y, colors.green)
         y = y + 1
     else
         writeCentered("Energy Stored: Error", y, colors.red)
