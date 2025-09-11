@@ -38,12 +38,30 @@ while true do
     writeCentered("AE2 Energy Monitor", y, colors.yellow)
     y = y + 2
 
-    local ok, usage = pcall(me.getEnergyUsage)
-    if ok then
+    -- Energieverbrauch
+    local okUsage, usage = pcall(me.getEnergyUsage)
+    if okUsage then
         writeCentered("Energy Usage: " .. formatBytes(usage) .. " RF/t", y, colors.red)
         y = y + 1
     else
         writeCentered("Energy Usage: Error", y, colors.red)
+        y = y + 1
+    end
+
+    -- Gespeicherte Energie
+    local okStored, stored = pcall(me.getStoredEnergy)
+    local okMax, maxStored = pcall(me.getMaxStoredEnergy) -- nur wenn deine Bridge das kann
+    if okStored then
+        if okMax and maxStored > 0 then
+            local percent = (stored / maxStored) * 100
+            writeCentered("Energy Stored: " .. formatBytes(stored) .. " FE (" .. string.format("%.1f", percent) .. "%)", y, colors.green)
+        else
+            -- Falls keine max-Kapazität verfügbar
+            writeCentered("Energy Stored: " .. formatBytes(stored) .. " FE", y, colors.green)
+        end
+        y = y + 1
+    else
+        writeCentered("Energy Stored: Error", y, colors.red)
         y = y + 1
     end
 
