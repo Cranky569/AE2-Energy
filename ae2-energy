@@ -50,8 +50,8 @@ while true do
         y = y + 1
     end
 
-    -- FE Energy Cell auslesen
-    local okCell, cell = pcall(bridge.getItem, { name = "fe_1m_cell" })
+    -- Energy Cell abrufen (korrekter Name: appflux:fe_1m_cell)
+    local okCell, cell = pcall(bridge.getItem, { name = "appflux:fe_1m_cell" })
     if okCell and cell and type(cell.amount) == "number" and type(cell.maxCount) == "number" then
         local percent = (cell.amount / cell.maxCount) * 100
         writeCentered("Stored: " .. formatBytes(cell.amount) .. " / " .. formatBytes(cell.maxCount), y, colors.green)
