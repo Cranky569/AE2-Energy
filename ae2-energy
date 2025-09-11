@@ -40,7 +40,7 @@ while true do
     writeCentered("ME Energy Monitor", y, colors.yellow)
     y = y + 2
 
-    -- Energieverbrauch
+    -- Aktueller Energieverbrauch
     local okUsage, usage = pcall(bridge.getEnergyUsage)
     if okUsage and type(usage) == "number" then
         writeCentered("Energy Usage: " .. formatBytes(usage) .. " FE/t", y, colors.red)
@@ -50,16 +50,27 @@ while true do
         y = y + 1
     end
 
-    -- Energy Cell abrufen (korrekter Name: appflux:fe_1m_cell)
-    local okCell, cell = pcall(bridge.getItem, { name = "appflux:fe_1m_cell" })
-    if okCell and cell and type(cell.amount) == "number" and type(cell.maxCount) == "number" then
-        local percent = (cell.amount / cell.maxCount) * 100
-        writeCentered("Stored: " .. formatBytes(cell.amount) .. " / " .. formatBytes(cell.maxCount), y, colors.green)
+    -- Durchschnittliche Einspeisung
+    local okInjection, injection = pcall(bridge.getAvgPowerInjection)
+    if okInjection and type(injection) == "number" then
+        writeCentered("Avg Power Injection: " .. formatBytes(injection) .. " FE/t", y, colors.lightBlue)
+        y = y + 1
+    else
+        writeCentered("Avg Power Injection: Error", y, colors.lightBlue)
+        y = y + 1
+    end
+
+    -- Gespeicherte Energie & Kapazität
+    local okStored, stored = pcall(bridge.getStoredEnergy)
+    local okCap, capacity = pcall(bridge.getEnergyCapacity)
+    if okStored and okCap and type(stored) == "number" and type(capacity) == "number" and capacity > 0 then
+        local percent = (stored / capacity) * 100
+        writeCentered("Stored: " .. formatBytes(stored) .. " / " .. formatBytes(capacity), y, colors.green)
         y = y + 1
         writeCentered(string.format("(%.2f%%)", percent), y, colors.green)
         y = y + 1
     else
-        writeCentered("Energy Cell not found!", y, colors.red)
+        writeCentered("Energy Storage: Error", y, colors.red)
         y = y + 1
     end
 
