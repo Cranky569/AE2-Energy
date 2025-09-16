@@ -1,10 +1,10 @@
 local mon = peripheral.find("monitor")
 local bridge = peripheral.find("me_bridge")
 
-if not mon then error("Kein Monitor gefunden!") end
-if not bridge then error("Keine ME Bridge gefunden!") end
+if not mon then error("No monitor found!") end
+if not bridge then error("No ME Bridge found!") end
 
--- Funktion zum Formatieren großer Zahlen
+-- Format large numbers
 local function formatBytes(bytes)
     if bytes >= 1e12 then
         return string.format("%.2fT", bytes / 1e12)
@@ -19,12 +19,13 @@ local function formatBytes(bytes)
     end
 end
 
--- Monitor Setup
+-- Monitor setup
 mon.clear()
 mon.setTextScale(1)
 mon.setBackgroundColor(colors.black)
 mon.setTextColor(colors.white)
 
+-- Write centered text
 local function writeCentered(text, y, color)
     local w, _ = mon.getSize()
     local x = math.floor((w - #text) / 2) + 1
@@ -34,43 +35,69 @@ local function writeCentered(text, y, color)
     mon.setTextColor(colors.white)
 end
 
+-- Main loop
 while true do
     mon.clear()
     local y = 1
     writeCentered("ME Energy Monitor", y, colors.yellow)
     y = y + 2
 
-    -- Aktueller Energieverbrauch
-    local okUsage, usage = pcall(bridge.getEnergyUsage)
+    -- Stored Power
+    local okStored, stored = pcall(function() return bridge.getStoredEnergy() end)
+    if okStored and type(stored) == "number" then
+        writeCentered("Stored Power: " .. formatBytes(stored) .. " AE", y, colors.green)
+        y = y + 1
+    else
+        writeCentered("Stored Power: N/A", y, colors.red)
+        y = y + 1
+    end
+
+    -- Max Power (Capacity)
+    local okCap, capacity = pcall(function() return bridge.getEnergyCapacity() end)
+    if okCap and type(capacity) == "number" then
+        writeCentered("Max Power: " .. formatBytes(capacity) .. " AE", y, colors.green)
+        y = y + 1
+    else
+        writeCentered("Max Power: N/A", y, colors.red)
+        y = y + 1
+    end
+
+    -- Channel Passive Drain
+    local okDrain, drain = pcall(function() return bridge.getChannelPassiveDrain() end)
+    if okDrain and type(drain) == "number" then
+        writeCentered("Channel Passive Drain: " .. formatBytes(drain) .. " AE/t", y, colors.orange)
+        y = y + 1
+    else
+        writeCentered("Channel Passive Drain: N/A", y, colors.red)
+        y = y + 1
+    end
+
+    -- Energy Usage
+    local okUsage, usage = pcall(function() return bridge.getEnergyUsage() end)
     if okUsage and type(usage) == "number" then
-        writeCentered("Energy Usage: " .. formatBytes(usage) .. " FE/t", y, colors.red)
+        writeCentered("Energy Usage: " .. formatBytes(usage) .. " AE/t", y, colors.red)
         y = y + 1
     else
-        writeCentered("Energy Usage: Error", y, colors.red)
+        writeCentered("Energy Usage: N/A", y, colors.red)
         y = y + 1
     end
 
-    -- Durchschnittliche Einspeisung
-    local okInjection, injection = pcall(bridge.getAvgPowerInjection)
-    if okInjection and type(injection) == "number" then
-        writeCentered("Avg Power Injection: " .. formatBytes(injection) .. " FE/t", y, colors.lightBlue)
-        y = y + 1
-    else
-        writeCentered("Avg Power Injection: Error", y, colors.lightBlue)
-        y = y + 1
+    -- Energy Generation
+    local okGen, gen = pcall(function() return bridge.getAvgPowerInjection() end)
+    if not okGen or gen == nil then
+        -- fallback: estimate generation as usage + channel drain
+        if okUsage and usage and okDrain and drain then
+            gen = usage + drain
+        else
+            gen = nil
+        end
     end
 
-    -- Gespeicherte Energie & Kapazität
-    local okStored, stored = pcall(bridge.getStoredEnergy)
-    local okCap, capacity = pcall(bridge.getEnergyCapacity)
-    if okStored and okCap and type(stored) == "number" and type(capacity) == "number" and capacity > 0 then
-        local percent = (stored / capacity) * 100
-        writeCentered("Stored: " .. formatBytes(stored) .. " / " .. formatBytes(capacity), y, colors.green)
-        y = y + 1
-        writeCentered(string.format("(%.2f%%)", percent), y, colors.green)
+    if gen then
+        writeCentered("Energy Generation: " .. formatBytes(gen) .. " AE/t", y, colors.lightBlue)
         y = y + 1
     else
-        writeCentered("Energy Storage: Error", y, colors.red)
+        writeCentered("Energy Generation: N/A", y, colors.red)
         y = y + 1
     end
 
