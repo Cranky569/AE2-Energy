@@ -21,7 +21,7 @@ end
 
 -- Monitor setup
 mon.clear()
-mon.setTextScale(3) -- 3x text size
+mon.setTextScale(2) -- 2x text size
 mon.setBackgroundColor(colors.black)
 mon.setTextColor(colors.white)
 
