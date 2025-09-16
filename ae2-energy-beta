@@ -35,17 +35,27 @@ local function writeCentered(text, y, color)
     mon.setTextColor(colors.white)
 end
 
--- Draw progress bar
+-- Draw progress bar with empty lines above and below
 local function drawProgressBar(y, fraction, color)
     local w, _ = mon.getSize()
     local barWidth = w - 4
+
+    -- Leerzeile über der Progressbar
+    mon.setCursorPos(1, y)
+    mon.write(string.rep(" ", w))
+
+    -- Progressbar selbst
     local filled = math.floor(barWidth * fraction)
-    mon.setCursorPos(3, y)
+    mon.setCursorPos(3, y + 1)
     mon.setBackgroundColor(color)
     mon.write(string.rep(" ", filled))
     mon.setBackgroundColor(colors.gray)
     mon.write(string.rep(" ", barWidth - filled))
     mon.setBackgroundColor(colors.black)
+
+    -- Leerzeile unter der Progressbar
+    mon.setCursorPos(1, y + 2)
+    mon.write(string.rep(" ", w))
 end
 
 -- Main loop
@@ -63,10 +73,10 @@ while true do
         if okCap and type(capacity) == "number" and capacity > 0 then
             drawProgressBar(y + 1, stored / capacity, colors.green)
         end
-        y = y + 2
+        y = y + 4  -- +4 wegen leerer Linien über und unter Progressbar
     else
         writeCentered("Stored Power: N/A", y, colors.red)
-        y = y + 2
+        y = y + 4
     end
 
     -- Max Power
