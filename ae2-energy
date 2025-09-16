@@ -21,7 +21,7 @@ end
 
 -- Monitor setup
 mon.clear()
-mon.setTextScale(1)
+mon.setTextScale(2)
 mon.setBackgroundColor(colors.black)
 mon.setTextColor(colors.white)
 
@@ -35,6 +35,29 @@ local function writeCentered(text, y, color)
     mon.setTextColor(colors.white)
 end
 
+-- Draw progress bar with empty lines above and below
+local function drawProgressBar(y, fraction, color)
+    local w, _ = mon.getSize()
+    local barWidth = w - 4
+
+    -- Leerzeile über der Progressbar
+    mon.setCursorPos(1, y)
+    mon.write(string.rep(" ", w))
+
+    -- Progressbar selbst
+    local filled = math.floor(barWidth * fraction)
+    mon.setCursorPos(3, y + 1)
+    mon.setBackgroundColor(color)
+    mon.write(string.rep(" ", filled))
+    mon.setBackgroundColor(colors.gray)
+    mon.write(string.rep(" ", barWidth - filled))
+    mon.setBackgroundColor(colors.black)
+
+    -- Leerzeile unter der Progressbar
+    mon.setCursorPos(1, y + 2)
+    mon.write(string.rep(" ", w))
+end
+
 -- Main loop
 while true do
     mon.clear()
@@ -44,62 +67,55 @@ while true do
 
     -- Stored Power
     local okStored, stored = pcall(function() return bridge.getStoredEnergy() end)
+    local okCap, capacity = pcall(function() return bridge.getEnergyCapacity() end)
     if okStored and type(stored) == "number" then
         writeCentered("Stored Power: " .. formatBytes(stored) .. " AE", y, colors.green)
-        y = y + 1
+        if okCap and type(capacity) == "number" and capacity > 0 then
+            drawProgressBar(y + 1, stored / capacity, colors.green)
+        end
+        y = y + 4  -- +4 wegen leerer Linien über und unter Progressbar
     else
         writeCentered("Stored Power: N/A", y, colors.red)
-        y = y + 1
+        y = y + 4
     end
 
-    -- Max Power (Capacity)
-    local okCap, capacity = pcall(function() return bridge.getEnergyCapacity() end)
+    -- Max Power
     if okCap and type(capacity) == "number" then
         writeCentered("Max Power: " .. formatBytes(capacity) .. " AE", y, colors.green)
-        y = y + 1
+        y = y + 2  -- +1 normale Zeile +1 Leerzeile
     else
         writeCentered("Max Power: N/A", y, colors.red)
-        y = y + 1
+        y = y + 2
     end
 
     -- Channel Passive Drain
     local okDrain, drain = pcall(function() return bridge.getChannelPassiveDrain() end)
     if okDrain and type(drain) == "number" then
         writeCentered("Channel Passive Drain: " .. formatBytes(drain) .. " AE/t", y, colors.orange)
-        y = y + 1
     else
         writeCentered("Channel Passive Drain: N/A", y, colors.red)
-        y = y + 1
+        drain = 0 -- fallback für generation
     end
+    y = y + 1
 
     -- Energy Usage
     local okUsage, usage = pcall(function() return bridge.getEnergyUsage() end)
     if okUsage and type(usage) == "number" then
         writeCentered("Energy Usage: " .. formatBytes(usage) .. " AE/t", y, colors.red)
-        y = y + 1
     else
         writeCentered("Energy Usage: N/A", y, colors.red)
-        y = y + 1
+        usage = 0 -- fallback für generation
     end
+    y = y + 2  -- Leerzeile nach Usage
 
     -- Energy Generation
     local okGen, gen = pcall(function() return bridge.getAvgPowerInjection() end)
     if not okGen or gen == nil then
         -- fallback: estimate generation as usage + channel drain
-        if okUsage and usage and okDrain and drain then
-            gen = usage + drain
-        else
-            gen = nil
-        end
+        gen = usage + drain
     end
-
-    if gen then
-        writeCentered("Energy Generation: " .. formatBytes(gen) .. " AE/t", y, colors.lightBlue)
-        y = y + 1
-    else
-        writeCentered("Energy Generation: N/A", y, colors.red)
-        y = y + 1
-    end
+    writeCentered("Energy Generation: " .. (gen and formatBytes(gen) or "N/A") .. " AE/t", y, colors.lightBlue)
+    y = y + 2
 
     sleep(2)
 end
