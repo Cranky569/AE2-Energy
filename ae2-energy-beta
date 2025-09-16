@@ -82,10 +82,10 @@ while true do
     -- Max Power
     if okCap and type(capacity) == "number" then
         writeCentered("Max Power: " .. formatBytes(capacity) .. " AE", y, colors.green)
-        y = y + 1
+        y = y + 2  -- +1 normale Zeile +1 Leerzeile
     else
         writeCentered("Max Power: N/A", y, colors.red)
-        y = y + 1
+        y = y + 2
     end
 
     -- Channel Passive Drain
@@ -106,7 +106,7 @@ while true do
         writeCentered("Energy Usage: N/A", y, colors.red)
         usage = 0 -- fallback für generation
     end
-    y = y + 1
+    y = y + 2  -- Leerzeile nach Usage
 
     -- Energy Generation
     local okGen, gen = pcall(function() return bridge.getAvgPowerInjection() end)
